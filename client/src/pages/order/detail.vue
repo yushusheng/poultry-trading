@@ -27,8 +27,8 @@
     </view>
 
     <view class="actions" v-if="order.status === 'pending'">
-      <button class="ghost-btn" @click="cancel">取消订单</button>
-      <button class="primary-btn" @click="pay">立即支付 ¥{{ Number(order.total_price).toFixed(2) }}</button>
+      <button class="ghost-btn cancel-btn" @click="cancel">取消订单</button>
+      <button class="primary-btn pay-btn" @click="pay">立即支付 ¥{{ Number(order.total_price).toFixed(2) }}</button>
     </view>
   </view>
 </template>
@@ -61,14 +61,23 @@ async function pay() {
   }
 }
 
-async function cancel() {
-  try {
-    await put('/orders/' + order.value.id + '/status', { status: 'cancelled' })
-    uni.showToast({ title: '已取消', icon: 'none' })
-    order.value = await get('/orders/' + order.value.id)
-  } catch (e) {
-    // 已提示
-  }
+function cancel() {
+  uni.showModal({
+    title: '提示',
+    content: '确定取消该订单吗？取消后订单将不可恢复。',
+    confirmText: '确定取消',
+    confirmColor: '#ff3b30',
+    success: async (res) => {
+      if (!res.confirm) return
+      try {
+        await put('/orders/' + order.value.id + '/status', { status: 'cancelled' })
+        uni.showToast({ title: '已取消', icon: 'none' })
+        order.value = await get('/orders/' + order.value.id)
+      } catch (e) {
+        // 已提示
+      }
+    }
+  })
 }
 
 onLoad(async (options) => {
@@ -147,13 +156,31 @@ onLoad(async (options) => {
 
 .actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 20rpx;
-  margin-top: 32rpx;
+  margin-top: 40rpx;
 
-  button {
-    width: 240rpx;
+  .cancel-btn,
+  .pay-btn {
+    height: 76rpx;
+    line-height: 76rpx;
+    padding: 0;
     margin: 0;
+    box-sizing: border-box;
+    font-size: 28rpx;
+  }
+
+  .cancel-btn {
+    width: 200rpx;
+    flex-shrink: 0;
+  }
+
+  .pay-btn {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 </style>
