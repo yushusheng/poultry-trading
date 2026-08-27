@@ -1,0 +1,25 @@
+{
+  "name": "poultry-market-client",
+  "version": "1.0.0",
+  "private": true,
+  "description": "鸡鸭禽买卖系统小程序 - 前端 (Vue3 + uni-app)",
+  "scripts": {
+    "dev:mp-weixin": "UNI_OUTPUT_DIR=dist uni -p mp-weixin",
+    "build:mp-weixin": "UNI_OUTPUT_DIR=dist uni build -p mp-weixin"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-4020920240930001",
+    "@dcloudio/uni-components": "3.0.0-4020920240930001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-4020920240930001",
+    "vue": "^3.4.21",
+    "vue-i18n": "^9.1.9"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.4.11",
+    "@dcloudio/uni-cli-shared": "3.0.0-4020920240930001",
+    "@dcloudio/uni-stacktracey": "3.0.0-4020920240930001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-4020920240930001",
+    "sass": "1.77.8",
+    "vite": "5.2.8"
+  }
+}
