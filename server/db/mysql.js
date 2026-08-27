@@ -58,7 +58,7 @@ async function listProducts({ keyword = '', category = '', merchantId = null } =
   if (category) { sql += ' AND p.category = ?'; params.push(category); }
   if (keyword) { sql += ' AND p.title LIKE ?'; params.push(`%${keyword}%`); }
   sql += ' ORDER BY p.created_at DESC';
-  return q(sql, params);
+  return (await q(sql, params)).map(parseImages);
 }
 
 async function listMerchantProducts(merchantId) {
@@ -69,7 +69,17 @@ async function listMerchantProducts(merchantId) {
     WHERE p.merchant_id = ?
     ORDER BY p.created_at DESC
   `;
-  return q(sql, [merchantId]);
+  return (await q(sql, [merchantId])).map(parseImages);
+}
+
+function parseImages(row) {
+  if (!row) return row;
+  try {
+    row.images = row.images ? JSON.parse(row.images) : [];
+  } catch (e) {
+    row.images = [];
+  }
+  return row;
 }
 
 async function getProduct(id) {
@@ -80,14 +90,14 @@ async function getProduct(id) {
      WHERE p.id = ? LIMIT 1`,
     [id]
   );
-  return rows[0] || null;
+  return parseImages(rows[0] || null);
 }
 
-async function createProduct({ merchantId, title, category, description, price, unit, stock, imageUrl, status }) {
+async function createProduct({ merchantId, title, category, description, price, unit, stock, imageUrl, status, images }) {
   const r = await q(
-    `INSERT INTO products (merchant_id, title, category, description, price, unit, stock, image_url, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [merchantId, title, category, description, price, unit, stock, imageUrl, status]
+    `INSERT INTO products (merchant_id, title, category, description, price, unit, stock, image_url, images, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [merchantId, title, category, description, price, unit, stock, imageUrl, images && images.length ? JSON.stringify(images) : null, status]
   );
   return getProduct(r.insertId);
 }
@@ -105,6 +115,10 @@ async function updateProduct(id, data) {
       params.push(data[k]);
     }
   });
+  if (data.images !== undefined) {
+    fields.push('images = ?');
+    params.push(data.images && data.images.length ? JSON.stringify(data.images) : null);
+  }
   if (!fields.length) return getProduct(id);
   params.push(id);
   await q(`UPDATE products SET ${fields.join(', ')} WHERE id = ?`, params);

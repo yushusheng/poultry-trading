@@ -41,13 +41,14 @@ router.get('/merchant/mine', auth, requireRole('merchant'), async (req, res, nex
 // 商户：发布商品
 router.post('/', auth, requireRole('merchant'), async (req, res, next) => {
   try {
-    const { title, category, description, price, unit, stock, imageUrl, status } = req.body || {};
+    const { title, category, description, price, unit, stock, imageUrl, status, images } = req.body || {};
     if (!title || !category || price === undefined) {
       return res.status(400).json({ code: 400, message: '标题、分类、价格为必填项' });
     }
     if (!CATEGORIES.includes(category)) {
       return res.status(400).json({ code: 400, message: '分类不合法' });
     }
+    const imgList = Array.isArray(images) ? images.filter((i) => typeof i === 'string' && i) : [];
     const product = await db.createProduct({
       merchantId: req.user.id,
       title,
@@ -56,7 +57,8 @@ router.post('/', auth, requireRole('merchant'), async (req, res, next) => {
       price,
       unit: unit || '只',
       stock: Number(stock || 0),
-      imageUrl: imageUrl || '',
+      imageUrl: imgList.length ? imgList[0] : imageUrl || '',
+      images: imgList,
       status: status || 'on'
     });
     res.json({ code: 0, message: '发布成功', data: product });
@@ -73,7 +75,14 @@ router.put('/:id', auth, requireRole('merchant'), async (req, res, next) => {
     if (product.merchant_id !== req.user.id) {
       return res.status(403).json({ code: 403, message: '只能操作自己的商品' });
     }
-    const updated = await db.updateProduct(req.params.id, req.body || {});
+    const body = req.body || {};
+    const updateData = { ...body };
+    if (Array.isArray(body.images)) {
+      const imgList = body.images.filter((i) => typeof i === 'string' && i);
+      updateData.images = imgList;
+      updateData.imageUrl = imgList.length ? imgList[0] : '';
+    }
+    const updated = await db.updateProduct(req.params.id, updateData);
     res.json({ code: 0, message: '保存成功', data: updated });
   } catch (e) {
     next(e);

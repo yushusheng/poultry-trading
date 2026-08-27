@@ -8,7 +8,7 @@
 | 模块 | 说明 |
 | --- | --- |
 | 登录 / 注册 | 支持用户端与商户端两种角色 |
-| 商品管理（商户） | 发布、编辑、上下架、删除商品 |
+| 商品管理（商户） | 发布、编辑、上下架、删除商品；支持上传多张图片，详情页轮播展示 |
 | 商品浏览（用户） | 首页、列表搜索、分类筛选、详情 |
 | 在线咨询 | 用户发起咨询，商户回复 |
 | 在线支付 | 用户下单并支付（当前为模拟支付，可接入微信支付） |
@@ -95,6 +95,7 @@ npm run build:mp-weixin   # 或 npm run dev:mp-weixin（监听模式）
 | POST | /api/auth/register | 注册 |
 | POST | /api/auth/login | 登录 |
 | GET | /api/auth/me | 当前用户信息 |
+| POST | /api/upload | 商户上传商品图片（multipart，字段 images，最多 9 张） |
 | GET | /api/products | 商品列表（支持 keyword / category） |
 | GET | /api/products/:id | 商品详情 |
 | GET | /api/products/merchant/mine | 商户自己的商品 |
@@ -129,7 +130,7 @@ npm run build:mp-weixin   # 或 npm run dev:mp-weixin（监听模式）
 2. MySQL 模式需先执行 `server/sql/init.sql` 初始化，并检查 `server/config.js` 的数据库配置。
 3. 微信开发者工具调试时需关闭「合法域名校验」；上线前请将后端部署到 HTTPS 域名并在小程序后台配置 request 合法域名。
 4. 当前支付为模拟支付；正式上线请接入微信支付（`wx.requestPayment` + 服务端下单/回调）。
-5. 商品图片目前使用分类占位符；如需图片上传可基于 `/uploads` 静态目录扩展。
+5. 商品支持多图上传（`POST /api/upload`），图片保存到 `server/uploads` 并通过 `/uploads` 静态访问；无图时展示分类占位符。
 
 ## 版权
 

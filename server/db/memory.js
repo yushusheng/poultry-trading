@@ -38,10 +38,10 @@ async function init() {
     { id: nextUserId++, username: 'user', password: hash, nickname: '李四买家', phone: '13900000002', role: 'user', created_at: now() }
   ];
   products = [
-    { id: nextProductId++, merchant_id: 1, title: '农家散养土鸡', category: '鸡', description: '散养土鸡，肉质紧实，营养丰富，约2.5-3斤/只。', price: 68, unit: '只', stock: 200, image_url: '', status: 'on', created_at: now() },
-    { id: nextProductId++, merchant_id: 1, title: '麻鸭', category: '鸭', description: '稻田麻鸭，口感鲜美，约3-3.5斤/只。', price: 45, unit: '只', stock: 150, image_url: '', status: 'on', created_at: now() },
-    { id: nextProductId++, merchant_id: 1, title: '大白鹅', category: '鹅', description: '大白鹅，适合煲汤，约5斤/只。', price: 120, unit: '只', stock: 80, image_url: '', status: 'on', created_at: now() },
-    { id: nextProductId++, merchant_id: 1, title: '土鸡蛋', category: '其他', description: '新鲜土鸡蛋，30枚/箱。', price: 35, unit: '箱', stock: 500, image_url: '', status: 'on', created_at: now() }
+    { id: nextProductId++, merchant_id: 1, title: '农家散养土鸡', category: '鸡', description: '散养土鸡，肉质紧实，营养丰富，约2.5-3斤/只。', price: 68, unit: '只', stock: 200, image_url: '', images: [], status: 'on', created_at: now() },
+    { id: nextProductId++, merchant_id: 1, title: '麻鸭', category: '鸭', description: '稻田麻鸭，口感鲜美，约3-3.5斤/只。', price: 45, unit: '只', stock: 150, image_url: '', images: [], status: 'on', created_at: now() },
+    { id: nextProductId++, merchant_id: 1, title: '大白鹅', category: '鹅', description: '大白鹅，适合煲汤，约5斤/只。', price: 120, unit: '只', stock: 80, image_url: '', images: [], status: 'on', created_at: now() },
+    { id: nextProductId++, merchant_id: 1, title: '土鸡蛋', category: '其他', description: '新鲜土鸡蛋，30枚/箱。', price: 35, unit: '箱', stock: 500, image_url: '', images: [], status: 'on', created_at: now() }
   ];
   // 演示订单（跨最近几个月，覆盖多个分类与状态）
   const p = (n) => String(n).padStart(2, '0');
@@ -131,7 +131,7 @@ async function getProduct(id) {
   return { ...clone(p), merchant_name: m ? m.nickname : '', merchant_phone: m ? m.phone : '' };
 }
 
-async function createProduct({ merchantId, title, category, description, price, unit, stock, imageUrl, status }) {
+async function createProduct({ merchantId, title, category, description, price, unit, stock, imageUrl, status, images }) {
   const p = {
     id: nextProductId++,
     merchant_id: merchantId,
@@ -142,6 +142,7 @@ async function createProduct({ merchantId, title, category, description, price, 
     unit: unit || '只',
     stock: Number(stock || 0),
     image_url: imageUrl || '',
+    images: images || [],
     status: status || 'on',
     created_at: now()
   };
@@ -152,7 +153,7 @@ async function createProduct({ merchantId, title, category, description, price, 
 async function updateProduct(id, data) {
   const p = products.find((x) => x.id === Number(id));
   if (!p) return null;
-  const map = { title: 'title', category: 'category', description: 'description', price: 'price', unit: 'unit', stock: 'stock', imageUrl: 'image_url', status: 'status' };
+  const map = { title: 'title', category: 'category', description: 'description', price: 'price', unit: 'unit', stock: 'stock', imageUrl: 'image_url', status: 'status', images: 'images' };
   Object.keys(data).forEach((k) => {
     if (map[k] && data[k] !== undefined) p[map[k]] = data[k];
   });

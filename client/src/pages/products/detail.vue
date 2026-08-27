@@ -1,7 +1,19 @@
 <template>
   <view class="page">
     <view class="hero">
-      <image v-if="product.image_url" class="hero-img" :src="product.image_url" mode="aspectFill" />
+      <swiper
+        v-if="images.length"
+        class="hero-swiper"
+        indicator-dots
+        indicator-color="rgba(255,255,255,0.5)"
+        indicator-active-color="#ffffff"
+        circular
+        autoplay
+      >
+        <swiper-item v-for="(img, i) in images" :key="i">
+          <image class="hero-img" :src="img" mode="aspectFill" @click="previewImage(i)" />
+        </swiper-item>
+      </swiper>
       <view v-else class="hero-placeholder">{{ emoji }}</view>
       <view class="hero-info">
         <view class="hero-title">{{ product.title }}</view>
@@ -27,13 +39,15 @@
         <view class="block-title">商家信息</view>
         <text class="merchant-name">{{ product.merchant_name }}</text>
       </view>
-      <text class="call-btn">📞 联系商家</text>
+      <text v-if="!isMerchant" class="call-btn">📞 联系商家</text>
     </view>
 
-    <view class="footer">
+    <!-- 商户端登录时不展示咨询/购买操作 -->
+    <view v-if="!isMerchant" class="footer">
       <view class="footer-btn consult" @click="goConsult">💬 在线咨询</view>
       <view class="footer-btn buy" @click="goBuy">立即购买</view>
     </view>
+    <view v-else class="merchant-tip">商户端登录，仅供查看商品信息</view>
   </view>
 </template>
 
@@ -42,11 +56,26 @@ import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { get } from '@/utils/request'
 import { categoryEmoji } from '@/config'
-import { isLoggedIn } from '@/utils/auth'
+import { isLoggedIn, getUser } from '@/utils/auth'
+
+const isMerchant = computed(() => {
+  const u = getUser()
+  return !!(u && u.role === 'merchant')
+})
 
 const product = ref({})
 const id = ref(null)
 const emoji = computed(() => categoryEmoji(product.value.category))
+const images = computed(() => {
+  const imgs = product.value.images || []
+  if (imgs.length) return imgs
+  return product.value.image_url ? [product.value.image_url] : []
+})
+
+function previewImage(current) {
+  if (!images.value.length) return
+  uni.previewImage({ urls: images.value, current: images.value[current] })
+}
 
 function formatPrice(v) {
   return Number(v || 0).toFixed(2)
@@ -90,6 +119,11 @@ onLoad(async (options) => {
 .hero {
   background: #fff;
   padding-bottom: 24rpx;
+
+  .hero-swiper {
+    width: 100%;
+    height: 420rpx;
+  }
 
   .hero-img {
     width: 100%;
@@ -175,6 +209,20 @@ onLoad(async (options) => {
     color: #ff6b2c;
     font-size: 26rpx;
   }
+}
+
+.merchant-tip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  text-align: center;
+  background: #fff;
+  color: #999;
+  font-size: 24rpx;
+  padding: 28rpx 0;
+  padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid #f5f5f5;
 }
 
 .footer {
