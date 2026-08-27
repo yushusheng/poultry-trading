@@ -92,7 +92,8 @@ npm run build:mp-weixin   # 或 npm run dev:mp-weixin（监听模式）
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| POST | /api/auth/register | 注册 |
+| POST | /api/auth/register | 注册（需图形验证码 captchaId/captchaCode） |
+| GET | /api/captcha | 获取图形验证码（id + svg） |
 | POST | /api/auth/login | 登录 |
 | GET | /api/auth/me | 当前用户信息 |
 | POST | /api/upload | 登录用户上传图片（咨询/商品均可，multipart 字段 images，最多 9 张） |

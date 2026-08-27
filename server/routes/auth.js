@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const db = require('../db');
 const { auth } = require('../middleware/auth');
+const { verifyCaptcha } = require('./captcha');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ function signToken(user) {
 // 注册
 router.post('/register', async (req, res, next) => {
   try {
-    const { username, password, nickname, phone, role } = req.body || {};
+    const { username, password, nickname, phone, role, captchaId, captchaCode } = req.body || {};
     if (!username || !password) {
       return res.status(400).json({ code: 400, message: '用户名和密码不能为空' });
     }
@@ -30,6 +31,9 @@ router.post('/register', async (req, res, next) => {
     }
     if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
       return res.status(400).json({ code: 400, message: '请输入正确的手机号' });
+    }
+    if (!verifyCaptcha(captchaId, captchaCode)) {
+      return res.status(400).json({ code: 400, message: '图形验证码错误或已过期' });
     }
     const r = role === 'merchant' ? 'merchant' : 'user';
     const exists = await db.findUserByUsername(username);
