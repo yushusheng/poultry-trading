@@ -91,14 +91,23 @@ async function pay(o) {
   }
 }
 
-async function cancel(o) {
-  try {
-    await put('/orders/' + o.id + '/status', { status: 'cancelled' })
-    uni.showToast({ title: '已取消', icon: 'none' })
-    load()
-  } catch (e) {
-    // 已提示
-  }
+function cancel(o) {
+  uni.showModal({
+    title: '提示',
+    content: '确定取消该订单吗？取消后订单将不可恢复。',
+    confirmText: '确定取消',
+    confirmColor: '#ff3b30',
+    success: async (res) => {
+      if (!res.confirm) return
+      try {
+        await put('/orders/' + o.id + '/status', { status: 'cancelled' })
+        uni.showToast({ title: '已取消', icon: 'none' })
+        load()
+      } catch (e) {
+        // 已提示
+      }
+    }
+  })
 }
 
 onShow(load)
