@@ -116,6 +116,10 @@ async function register() {
     uni.showToast({ title: '两次输入的密码不一致', icon: 'none' })
     return
   }
+  if (!/^1[3-9]\d{9}$/.test(form.phone)) {
+    uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+    return
+  }
   loading.value = true
   try {
     const data = await post('/auth/register', {

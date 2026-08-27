@@ -28,6 +28,9 @@ router.post('/register', async (req, res, next) => {
     if (password.length < 6) {
       return res.status(400).json({ code: 400, message: '密码长度不能少于 6 位' });
     }
+    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({ code: 400, message: '请输入正确的手机号' });
+    }
     const r = role === 'merchant' ? 'merchant' : 'user';
     const exists = await db.findUserByUsername(username);
     if (exists) {
