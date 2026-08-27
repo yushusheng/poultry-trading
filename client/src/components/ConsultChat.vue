@@ -83,6 +83,10 @@ const sending = ref(false)
 const uploading = ref(false)
 const scrollIntoView = ref('')
 
+// 本地临时路径 -> 服务器 URL 映射（上传完成后记录）
+const localToServer = {}
+const localPaths = []
+
 const myRole = computed(() => {
   const u = getUser()
   return u ? u.role : 'user'
@@ -140,26 +144,30 @@ function onEditorReady() {
 }
 
 // 插入图片到编辑区（可多张，内联展示）
+// 先用本地临时路径插入（真机立即可见，不依赖网络加载），后台再上传并记录映射
 function insertImage() {
   if (uploading.value || sending.value) return
   uni.chooseImage({
     count: 9,
     sizeType: ['compressed'],
     success: async (res) => {
+      const paths = res.tempFilePaths || []
+      if (!paths.length) return
+      const ctx = await queryEditorCtx()
+      if (!ctx) {
+        uni.showToast({ title: '编辑器尚未就绪，请稍后重试', icon: 'none' })
+        return
+      }
+      paths.forEach((p) => ctx.insertImage({ src: p, width: '80%' }))
+      paths.forEach((p) => localPaths.push(p))
+
       uploading.value = true
       uni.showLoading({ title: '上传中...' })
       try {
-        const urls = await uploadImages(res.tempFilePaths)
-        const ctx = await queryEditorCtx()
-        if (!ctx) {
-          uni.showToast({ title: '编辑器尚未就绪，请稍后重试', icon: 'none' })
-          return
-        }
-        urls.forEach((url) => {
-          ctx.insertImage({ src: url, width: '80%' })
-        })
+        const urls = await uploadImages(paths)
+        paths.forEach((p, i) => { localToServer[p] = urls[i] })
       } catch (e) {
-        // 已提示
+        // 已提示（图片保留本地显示，发送时会提示重新上传）
       } finally {
         uploading.value = false
         uni.hideLoading()
@@ -211,6 +219,17 @@ async function send() {
   if (sending.value || uploading.value) return
   const html = await getEditorHtml()
   const parts = parseEditorHtml(html)
+  // 把本地临时路径替换为服务器 URL；上传未完成/失败则提示重试
+  for (const part of parts) {
+    if (part.type === 'image') {
+      if (localToServer[part.url]) {
+        part.url = localToServer[part.url]
+      } else if (localPaths.indexOf(part.url) > -1) {
+        uni.showToast({ title: '图片上传中或失败，请稍后重试', icon: 'none' })
+        return
+      }
+    }
+  }
   const hasContent = parts.some((p) => p.type === 'text' || p.type === 'image')
   if (!hasContent) {
     uni.showToast({ title: '请输入消息或选择图片', icon: 'none' })
@@ -228,6 +247,9 @@ async function send() {
     }
     const ctx = await queryEditorCtx()
     if (ctx) ctx.clear()
+    // 清空本地路径映射
+    localPaths.length = 0
+    Object.keys(localToServer).forEach((k) => delete localToServer[k])
     await load()
   } catch (e) {
     // 已提示

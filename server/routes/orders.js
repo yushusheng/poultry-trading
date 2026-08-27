@@ -18,6 +18,9 @@ router.post('/', auth, requireRole('user'), async (req, res, next) => {
     if (!productId || !quantity || !contactName || !contactPhone || !address) {
       return res.status(400).json({ code: 400, message: '请填写完整的收货信息' });
     }
+    if (!/^1[3-9]\d{9}$/.test(contactPhone)) {
+      return res.status(400).json({ code: 400, message: '联系电话格式不正确' });
+    }
     const product = await db.getProduct(productId);
     if (!product) return res.status(404).json({ code: 404, message: '商品不存在' });
     const qty = Number(quantity);

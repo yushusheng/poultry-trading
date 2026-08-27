@@ -76,6 +76,10 @@ async function submit() {
     uni.showToast({ title: '请填写完整的收货信息', icon: 'none' })
     return
   }
+  if (!/^1[3-9]\d{9}$/.test(form.contactPhone)) {
+    uni.showToast({ title: '请输入正确的联系电话', icon: 'none' })
+    return
+  }
   loading.value = true
   try {
     const order = await post('/orders', {

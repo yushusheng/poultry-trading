@@ -61,6 +61,7 @@ const categoryNames = ref(FALLBACK_CATEGORIES.map((c) => c.value))
 const id = ref(null)
 const loading = ref(false)
 const uploading = ref(false)
+const localPaths = [] // 本地临时路径（上传完成后替换为服务器 URL）
 
 const form = reactive({
   title: '',
@@ -88,13 +89,21 @@ async function chooseImages() {
     count: remain,
     sizeType: ['compressed'],
     success: async (res) => {
+      const paths = res.tempFilePaths || []
+      if (!paths.length) return
+      // 先用本地路径展示缩略图（真机立即可见），后台上传后替换为服务器地址
+      form.images.push(...paths)
+      paths.forEach((p) => localPaths.push(p))
       uploading.value = true
       uni.showLoading({ title: '上传中...' })
       try {
-        const urls = await uploadImages(res.tempFilePaths)
-        form.images.push(...urls)
+        const urls = await uploadImages(paths)
+        paths.forEach((p, i) => {
+          const idx = form.images.indexOf(p)
+          if (idx > -1) form.images[idx] = urls[i]
+        })
       } catch (e) {
-        // 已提示
+        // 已提示（缩略图保留本地显示，保存时会提示）
       } finally {
         uploading.value = false
         uni.hideLoading()
@@ -108,7 +117,11 @@ function removeImage(i) {
     title: '提示',
     content: '确定删除这张图片吗？',
     success: (res) => {
-      if (res.confirm) form.images.splice(i, 1)
+      if (!res.confirm) return
+      const removed = form.images[i]
+      const li = localPaths.indexOf(removed)
+      if (li > -1) localPaths.splice(li, 1)
+      form.images.splice(i, 1)
     }
   })
 }
@@ -150,6 +163,11 @@ async function save() {
   }
   if (uploading.value) {
     uni.showToast({ title: '图片上传中，请稍候', icon: 'none' })
+    return
+  }
+  const hasLocal = form.images.some((img) => localPaths.indexOf(img) > -1)
+  if (hasLocal) {
+    uni.showToast({ title: '有图片上传失败，请删除后重新选择', icon: 'none' })
     return
   }
   loading.value = true
