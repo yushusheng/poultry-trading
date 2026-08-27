@@ -105,6 +105,12 @@
         "navigationBarTitleText": "交易记录",
         "enablePullDownRefresh": true
       }
+    },
+    {
+      "path": "pages/merchant/stats",
+      "style": {
+        "navigationBarTitleText": "数据统计"
+      }
     }
   ],
   "tabBar": {

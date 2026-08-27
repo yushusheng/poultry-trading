@@ -225,8 +225,104 @@ async function updateOrderStatus(id, status) {
   return getOrder(id);
 }
 
+// ---------- 数据统计 ----------
+const SOLD_SQL = "status IN ('paid','completed')";
+
+async function statsOverview(merchantId, { date, month, year } = {}) {
+  const base = 'FROM orders WHERE merchant_id = ? AND ' + SOLD_SQL;
+  const build = (cond, extra) => {
+    const sql = `SELECT COALESCE(SUM(total_price),0) AS amount, COALESCE(SUM(quantity),0) AS quantity, COUNT(*) AS orders ${base} AND ${cond}`;
+    const params = extra === undefined || extra === '' || extra === null ? [merchantId] : [merchantId, extra];
+    return { sql, params };
+  };
+  const todayQ = build(date ? 'DATE(created_at) = ?' : 'DATE(created_at) = CURDATE()', date);
+  const monthQ = build(month ? "DATE_FORMAT(created_at,'%Y-%m') = ?" : "DATE_FORMAT(created_at,'%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')", month);
+  const yearQ = build(year ? 'YEAR(created_at) = ?' : 'YEAR(created_at) = YEAR(CURDATE())', year);
+  const [today] = await q(todayQ.sql, todayQ.params);
+  const [monthRow] = await q(monthQ.sql, monthQ.params);
+  const [yearRow] = await q(yearQ.sql, yearQ.params);
+  return { today, month: monthRow, year: yearRow };
+}
+
+async function statsDaily(merchantId, month) {
+  return q(
+    `SELECT DATE(created_at) AS date, COALESCE(SUM(total_price),0) AS amount, COALESCE(SUM(quantity),0) AS quantity, COUNT(*) AS orders
+     FROM orders
+     WHERE merchant_id = ? AND ${SOLD_SQL} AND DATE_FORMAT(created_at,'%Y-%m') = ?
+     GROUP BY DATE(created_at) ORDER BY date`,
+    [merchantId, month]
+  );
+}
+
+async function statsMonthly(merchantId, months) {
+  const d = new Date();
+  d.setMonth(d.getMonth() - (months - 1));
+  d.setDate(1);
+  const start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  return q(
+    `SELECT DATE_FORMAT(created_at,'%Y-%m') AS month, COALESCE(SUM(total_price),0) AS amount, COALESCE(SUM(quantity),0) AS quantity, COUNT(*) AS orders
+     FROM orders
+     WHERE merchant_id = ? AND ${SOLD_SQL} AND created_at >= ?
+     GROUP BY DATE_FORMAT(created_at,'%Y-%m') ORDER BY month`,
+    [merchantId, start]
+  );
+}
+
+async function statsCategory(merchantId, { month, date, year }) {
+  let where;
+  let params;
+  if (date) {
+    where = "o.merchant_id = ? AND " + SOLD_SQL + " AND DATE(o.created_at) = ?";
+    params = [merchantId, date];
+  } else if (year) {
+    where = "o.merchant_id = ? AND " + SOLD_SQL + " AND YEAR(o.created_at) = ?";
+    params = [merchantId, year];
+  } else {
+    where = "o.merchant_id = ? AND " + SOLD_SQL + " AND DATE_FORMAT(o.created_at,'%Y-%m') = ?";
+    params = [merchantId, month];
+  }
+  return q(
+    `SELECT p.category AS category, COALESCE(SUM(o.total_price),0) AS amount, COALESCE(SUM(o.quantity),0) AS quantity, COUNT(*) AS orders
+     FROM orders o
+     INNER JOIN products p ON p.id = o.product_id
+     WHERE ${where}
+     GROUP BY p.category ORDER BY amount DESC`,
+    params
+  );
+}
+
+// 某年每月售出（供日历年视图）
+async function statsYearDetail(merchantId, year) {
+  return q(
+    `SELECT DATE_FORMAT(created_at,'%Y-%m') AS month, COALESCE(SUM(total_price),0) AS amount, COALESCE(SUM(quantity),0) AS quantity, COUNT(*) AS orders
+     FROM orders
+     WHERE merchant_id = ? AND ${SOLD_SQL} AND YEAR(created_at) = ?
+     GROUP BY DATE_FORMAT(created_at,'%Y-%m') ORDER BY month`,
+    [merchantId, year]
+  );
+}
+
+// 近 N 年每年售出
+async function statsYearly(merchantId, years) {
+  const y = new Date().getFullYear();
+  const startYear = y - (years - 1);
+  return q(
+    `SELECT YEAR(created_at) AS year, COALESCE(SUM(total_price),0) AS amount, COALESCE(SUM(quantity),0) AS quantity, COUNT(*) AS orders
+     FROM orders
+     WHERE merchant_id = ? AND ${SOLD_SQL} AND created_at >= ?
+     GROUP BY YEAR(created_at) ORDER BY year`,
+    [merchantId, `${startYear}-01-01`]
+  );
+}
+
 module.exports = {
   init,
+  statsOverview,
+  statsDaily,
+  statsMonthly,
+  statsYearDetail,
+  statsYearly,
+  statsCategory,
   findUserByUsername,
   findUserById,
   createUser,

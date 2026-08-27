@@ -25,6 +25,10 @@
         <text class="icon">🧾</text>
         <text>交易记录</text>
       </view>
+      <view class="grid-item card" @click="go('/pages/merchant/stats')">
+        <text class="icon">📈</text>
+        <text>数据统计</text>
+      </view>
     </view>
 
     <button class="ghost-btn switch" @click="switchToUser">切换用户端</button>

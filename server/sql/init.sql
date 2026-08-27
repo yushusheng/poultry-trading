@@ -88,3 +88,19 @@ INSERT INTO products (merchant_id, title, category, description, price, unit, st
 (1, '稻田麻鸭',   '鸭', '稻田麻鸭，口感鲜美，约3-3.5斤/只。', 45.00, '只', 150, '', 'on'),
 (1, '大白鹅',     '鹅', '大白鹅，适合煲汤，约5斤/只。', 120.00, '只', 80, '', 'on'),
 (1, '土鸡蛋',     '其他', '新鲜土鸡蛋，30枚/箱。', 35.00, '箱', 500, '', 'on');
+
+-- 演示订单（跨最近几个月，覆盖多个分类与状态；仅 paid/completed 计入统计）
+INSERT INTO orders (order_no, product_id, user_id, merchant_id, quantity, total_price, contact_name, contact_phone, address, status, created_at, paid_at) VALUES
+('DEMO00000001', 1, 2, 1, 2, 136.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'paid',      DATE_SUB(NOW(), INTERVAL 0 DAY),  DATE_SUB(NOW(), INTERVAL 0 DAY)),
+('DEMO00000002', 2, 2, 1, 3, 135.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'completed', DATE_SUB(NOW(), INTERVAL 0 DAY),  DATE_SUB(NOW(), INTERVAL 0 DAY)),
+('DEMO00000003', 4, 2, 1, 1, 35.00,  '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'completed', DATE_SUB(NOW(), INTERVAL 1 DAY),  DATE_SUB(NOW(), INTERVAL 1 DAY)),
+('DEMO00000004', 3, 2, 1, 1, 120.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'paid',      DATE_SUB(NOW(), INTERVAL 3 DAY),  DATE_SUB(NOW(), INTERVAL 3 DAY)),
+('DEMO00000005', 1, 2, 1, 5, 340.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'completed', DATE_SUB(NOW(), INTERVAL 6 DAY),  DATE_SUB(NOW(), INTERVAL 6 DAY)),
+('DEMO00000006', 2, 2, 1, 4, 180.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'completed', DATE_SUB(NOW(), INTERVAL 12 DAY), DATE_SUB(NOW(), INTERVAL 12 DAY)),
+('DEMO00000007', 4, 2, 1, 2, 70.00,  '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'paid',      DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 20 DAY)),
+('DEMO00000008', 3, 2, 1, 2, 240.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'completed', DATE_SUB(NOW(), INTERVAL 35 DAY), DATE_SUB(NOW(), INTERVAL 35 DAY)),
+('DEMO00000009', 1, 2, 1, 6, 408.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'paid',      DATE_SUB(NOW(), INTERVAL 55 DAY), DATE_SUB(NOW(), INTERVAL 55 DAY)),
+('DEMO00000010', 2, 2, 1, 5, 225.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'completed', DATE_SUB(NOW(), INTERVAL 90 DAY), DATE_SUB(NOW(), INTERVAL 90 DAY)),
+('DEMO00000011', 4, 2, 1, 3, 105.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'completed', DATE_SUB(NOW(), INTERVAL 130 DAY), DATE_SUB(NOW(), INTERVAL 130 DAY)),
+('DEMO00000012', 3, 2, 1, 1, 120.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'paid',      DATE_SUB(NOW(), INTERVAL 160 DAY), DATE_SUB(NOW(), INTERVAL 160 DAY)),
+('DEMO00000013', 1, 2, 1, 1, 68.00,  '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'pending',   DATE_SUB(NOW(), INTERVAL 0 DAY),  NULL);

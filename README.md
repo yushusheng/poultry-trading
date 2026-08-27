@@ -13,6 +13,7 @@
 | 在线咨询 | 用户发起咨询，商户回复 |
 | 在线支付 | 用户下单并支付（当前为模拟支付，可接入微信支付） |
 | 交易记录 | 商户查看订单，确认完成；用户查看/取消订单 |
+| 数据统计（商户） | 按日/按月/按年统计售出数量与金额、按分类统计售出金额、经营工作台与月/日历年历交互 |
 
 ## 项目结构
 
@@ -108,11 +109,19 @@ npm run build:mp-weixin   # 或 npm run dev:mp-weixin（监听模式）
 | GET | /api/orders/merchant | 商户交易记录 |
 | POST | /api/orders/:id/pay | 模拟支付 |
 | PUT | /api/orders/:id/status | 取消订单 / 确认完成 |
+| GET | /api/stats/overview | 商户工作台概览（今日/本月/累计） |
+| GET | /api/stats/daily?month=YYYY-MM | 某月每日售出数量与金额 |
+| GET | /api/stats/monthly?months=6 | 近 N 个月每月售出数量与金额 |
+| GET | /api/stats/monthly?year=YYYY | 某年 12 个月售出数量与金额 |
+| GET | /api/stats/yearly?years=6 | 近 N 年每年售出数量与金额 |
+| GET | /api/stats/category?month= | 按分类统计某月售出金额 |
+| GET | /api/stats/category?date= | 按分类统计某日售出金额 |
+| GET | /api/stats/category?year= | 按分类统计某年售出金额 |
 
 ## UI 页面
 
 - 用户端：首页、商品列表、商品详情、在线咨询、我的咨询、确认订单、我的订单、我的
-- 商户端：商户中心、商品管理、发布/编辑商品、咨询管理、咨询详情、交易记录
+- 商户端：商户中心、商品管理、发布/编辑商品、咨询管理、咨询详情、交易记录、数据统计（日历+工作台+图表）
 
 ## 注意事项
 

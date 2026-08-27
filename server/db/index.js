@@ -57,5 +57,12 @@ module.exports = {
   listOrdersByUser: (...a) => use().listOrdersByUser(...a),
   listOrdersByMerchant: (...a) => use().listOrdersByMerchant(...a),
   getOrder: (...a) => use().getOrder(...a),
-  updateOrderStatus: (...a) => use().updateOrderStatus(...a)
+  updateOrderStatus: (...a) => use().updateOrderStatus(...a),
+  // 数据统计
+  statsOverview: (...a) => use().statsOverview(...a),
+  statsDaily: (...a) => use().statsDaily(...a),
+  statsMonthly: (...a) => use().statsMonthly(...a),
+  statsYearDetail: (...a) => use().statsYearDetail(...a),
+  statsYearly: (...a) => use().statsYearly(...a),
+  statsCategory: (...a) => use().statsCategory(...a)
 };

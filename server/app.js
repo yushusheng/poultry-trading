@@ -18,6 +18,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/consultations', require('./routes/consultations'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/stats', require('./routes/stats'));
 
 // 404
 app.use((req, res) => {
