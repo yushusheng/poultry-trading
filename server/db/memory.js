@@ -8,11 +8,13 @@ const bcrypt = require('bcryptjs');
 let users = [];
 let products = [];
 let consultations = [];
+let consultationMessages = [];
 let orders = [];
 
 let nextUserId = 1;
 let nextProductId = 1;
 let nextConsultationId = 1;
+let nextMessageId = 1;
 let nextOrderId = 1;
 
 function now() {
@@ -81,6 +83,34 @@ async function init() {
       status: o.status,
       created_at: at(o.daysAgo),
       paid_at: o.status === 'pending' ? null : at(o.daysAgo)
+    });
+  });
+  // 演示咨询会话（多轮消息）
+  const demoConsultId = nextConsultationId++;
+  consultations.push({
+    id: demoConsultId,
+    product_id: 1,
+    user_id: 2,
+    merchant_id: 1,
+    status: 'open',
+    closed_at: null,
+    created_at: at(2, 9)
+  });
+  [
+    { role: 'user', content: '请问土鸡可以帮忙宰杀吗？', hour: 9 },
+    { role: 'merchant', content: '可以的，支持宰杀清理，下单时备注即可。', hour: 10 },
+    { role: 'user', content: '好的，那能送到小区门口吗？', hour: 11 },
+    { role: 'merchant', content: '可以，同城送货上门。', hour: 14 }
+  ].forEach((m) => {
+    consultationMessages.push({
+      id: nextMessageId++,
+      consultation_id: demoConsultId,
+      sender_id: m.role === 'user' ? 2 : 1,
+      sender_role: m.role,
+      content: m.content,
+      type: 'text',
+      image_url: null,
+      created_at: at(2, m.hour)
     });
   });
 }
@@ -165,19 +195,28 @@ async function deleteProduct(id) {
   consultations = consultations.filter((c) => c.product_id !== Number(id));
 }
 
-// ---------- 咨询 ----------
+// ---------- 咨询（多轮会话） ----------
 async function createConsultation({ productId, userId, merchantId, content }) {
   const c = {
     id: nextConsultationId++,
     product_id: productId,
     user_id: userId,
     merchant_id: merchantId,
-    content,
-    reply: null,
-    reply_at: null,
+    status: 'open',
+    closed_at: null,
     created_at: now()
   };
   consultations.push(c);
+  consultationMessages.push({
+    id: nextMessageId++,
+    consultation_id: c.id,
+    sender_id: userId,
+    sender_role: 'user',
+    content,
+    type: 'text',
+    image_url: null,
+    created_at: now()
+  });
   return getConsultation(c.id);
 }
 
@@ -188,12 +227,17 @@ async function listConsultationsByUser(userId) {
     .map((c) => {
       const p = products.find((x) => x.id === c.product_id);
       const m = users.find((u) => u.id === c.merchant_id);
+      const msgs = consultationMessages.filter((x) => x.consultation_id === c.id);
       return {
         ...clone(c),
         product_title: p ? p.title : '',
         product_image: p ? p.image_url : '',
         product_category: p ? p.category : '',
-        merchant_name: m ? m.nickname : ''
+        merchant_name: m ? m.nickname : '',
+        last_message: msgs.length ? msgs[msgs.length - 1].content : '',
+        last_message_type: msgs.length ? msgs[msgs.length - 1].type : 'text',
+        last_message_image: msgs.length ? msgs[msgs.length - 1].image_url || '' : '',
+        message_count: msgs.length
       };
     });
 }
@@ -205,12 +249,17 @@ async function listConsultationsByMerchant(merchantId) {
     .map((c) => {
       const p = products.find((x) => x.id === c.product_id);
       const u = users.find((x) => x.id === c.user_id);
+      const msgs = consultationMessages.filter((x) => x.consultation_id === c.id);
       return {
         ...clone(c),
         product_title: p ? p.title : '',
         product_image: p ? p.image_url : '',
         product_category: p ? p.category : '',
-        user_name: u ? u.nickname : ''
+        user_name: u ? u.nickname : '',
+        last_message: msgs.length ? msgs[msgs.length - 1].content : '',
+        last_message_type: msgs.length ? msgs[msgs.length - 1].type : 'text',
+        last_message_image: msgs.length ? msgs[msgs.length - 1].image_url || '' : '',
+        message_count: msgs.length
       };
     });
 }
@@ -228,15 +277,33 @@ async function getConsultation(id) {
     product_price: p ? p.price : 0,
     product_category: p ? p.category : '',
     user_name: u ? u.nickname : '',
-    merchant_name: m ? m.nickname : ''
+    merchant_name: m ? m.nickname : '',
+    messages: consultationMessages
+      .filter((x) => x.consultation_id === c.id)
+      .sort((a, b) => a.id - b.id)
+      .map(clone)
   };
 }
 
-async function replyConsultation(id, reply) {
+async function sendMessage({ consultationId, senderId, senderRole, content, type, imageUrl }) {
+  consultationMessages.push({
+    id: nextMessageId++,
+    consultation_id: Number(consultationId),
+    sender_id: senderId,
+    sender_role: senderRole,
+    content: content || '',
+    type: type || 'text',
+    image_url: imageUrl || null,
+    created_at: now()
+  });
+  return getConsultation(consultationId);
+}
+
+async function closeConsultation(id) {
   const c = consultations.find((x) => x.id === Number(id));
   if (!c) return null;
-  c.reply = reply;
-  c.reply_at = now();
+  c.status = 'closed';
+  c.closed_at = now();
   return getConsultation(c.id);
 }
 
@@ -431,7 +498,8 @@ module.exports = {
   listConsultationsByUser,
   listConsultationsByMerchant,
   getConsultation,
-  replyConsultation,
+  sendMessage,
+  closeConsultation,
   createOrder,
   listOrdersByUser,
   listOrdersByMerchant,

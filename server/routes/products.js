@@ -17,6 +17,11 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// 商品分类列表（公开，供发布商品时选择）
+router.get('/categories', (req, res) => {
+  res.json({ code: 0, message: 'ok', data: CATEGORIES });
+});
+
 // 商品详情（公开）
 router.get('/:id', async (req, res, next) => {
   try {

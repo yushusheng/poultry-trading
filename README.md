@@ -10,7 +10,7 @@
 | 登录 / 注册 | 支持用户端与商户端两种角色 |
 | 商品管理（商户） | 发布、编辑、上下架、删除商品；支持上传多张图片，详情页轮播展示 |
 | 商品浏览（用户） | 首页、列表搜索、分类筛选、详情 |
-| 在线咨询 | 用户发起咨询，商户回复 |
+| 在线咨询 | 用户与商户双向多轮会话，支持文字与图片消息，任一方可结束咨询 |
 | 在线支付 | 用户下单并支付（当前为模拟支付，可接入微信支付） |
 | 交易记录 | 商户查看订单，确认完成；用户查看/取消订单 |
 | 数据统计（商户） | 按日/按月/按年统计售出数量与金额、按分类统计售出金额、经营工作台与月/日历年历交互 |
@@ -95,7 +95,7 @@ npm run build:mp-weixin   # 或 npm run dev:mp-weixin（监听模式）
 | POST | /api/auth/register | 注册 |
 | POST | /api/auth/login | 登录 |
 | GET | /api/auth/me | 当前用户信息 |
-| POST | /api/upload | 商户上传商品图片（multipart，字段 images，最多 9 张） |
+| POST | /api/upload | 登录用户上传图片（咨询/商品均可，multipart 字段 images，最多 9 张） |
 | GET | /api/products | 商品列表（支持 keyword / category） |
 | GET | /api/products/:id | 商品详情 |
 | GET | /api/products/merchant/mine | 商户自己的商品 |
@@ -104,7 +104,8 @@ npm run build:mp-weixin   # 或 npm run dev:mp-weixin（监听模式）
 | POST | /api/consultations | 用户发起咨询 |
 | GET | /api/consultations/mine | 我的咨询 |
 | GET | /api/consultations/merchant | 商户收到的咨询 |
-| POST | /api/consultations/:id/reply | 商户回复 |
+| POST | /api/consultations/:id/messages | 双方发送文字/图片消息（进行中可发） |
+| POST | /api/consultations/:id/close | 任一方结束咨询 |
 | POST | /api/orders | 用户下单 |
 | GET | /api/orders/mine | 我的订单 |
 | GET | /api/orders/merchant | 商户交易记录 |

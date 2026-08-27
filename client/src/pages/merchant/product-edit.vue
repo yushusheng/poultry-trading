@@ -20,7 +20,9 @@
       <view class="field">
         <text class="label">分类</text>
         <picker :range="categoryNames" @change="onCategoryChange">
-          <view class="picker-value">{{ form.category }}</view>
+          <view class="picker-value" :class="{ placeholder: !form.category }">
+            {{ form.category || '请选择分类' }}
+          </view>
         </picker>
       </view>
       <view class="field">
@@ -53,15 +55,16 @@ import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { get, post, put } from '@/utils/request'
 import { uploadImages } from '@/utils/upload'
+import { CATEGORIES as FALLBACK_CATEGORIES } from '@/config'
 
-const categoryNames = ['鸡', '鸭', '鹅', '其他']
+const categoryNames = ref(FALLBACK_CATEGORIES.map((c) => c.value))
 const id = ref(null)
 const loading = ref(false)
 const uploading = ref(false)
 
 const form = reactive({
   title: '',
-  category: '鸡',
+  category: '',
   price: '',
   unit: '只',
   stock: '',
@@ -72,7 +75,7 @@ const form = reactive({
 const isEdit = computed(() => !!id.value)
 
 function onCategoryChange(e) {
-  form.category = categoryNames[Number(e.detail.value)]
+  form.category = categoryNames.value[Number(e.detail.value)]
 }
 
 async function chooseImages() {
@@ -114,6 +117,15 @@ function previewImage(i) {
   uni.previewImage({ urls: form.images, current: form.images[i] })
 }
 
+async function loadCategories() {
+  try {
+    const data = await get('/products/categories')
+    if (Array.isArray(data) && data.length) categoryNames.value = data
+  } catch (e) {
+    // 加载失败使用内置兜底分类
+  }
+}
+
 async function loadProduct() {
   const data = await get('/products/' + id.value)
   if (data) {
@@ -130,6 +142,10 @@ async function loadProduct() {
 async function save() {
   if (!form.title || form.price === '') {
     uni.showToast({ title: '请填写标题和单价', icon: 'none' })
+    return
+  }
+  if (!form.category) {
+    uni.showToast({ title: '请选择分类', icon: 'none' })
     return
   }
   if (uploading.value) {
@@ -162,6 +178,7 @@ async function save() {
 }
 
 onLoad((options) => {
+  loadCategories()
   if (options.id) {
     id.value = options.id
     uni.setNavigationBarTitle({ title: '编辑商品' })
@@ -249,6 +266,10 @@ onLoad((options) => {
   .picker-value {
     color: #333;
     font-size: 28rpx;
+
+    &.placeholder {
+      color: #bbb;
+    }
   }
 }
 

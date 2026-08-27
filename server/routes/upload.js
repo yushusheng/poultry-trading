@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { auth, requireRole } = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -26,8 +26,8 @@ const upload = multer({
   }
 });
 
-// 上传商品图片（商户），字段名 images，最多 9 张
-router.post('/', auth, requireRole('merchant'), upload.array('images', 9), (req, res, next) => {
+// 上传图片（登录用户，咨询/商品均可使用），字段名 images，最多 9 张
+router.post('/', auth, upload.array('images', 9), (req, res, next) => {
   try {
     const files = req.files || [];
     if (!files.length) return res.status(400).json({ code: 400, message: '请选择图片' });

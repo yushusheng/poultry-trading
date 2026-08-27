@@ -51,7 +51,8 @@ module.exports = {
   listConsultationsByUser: (...a) => use().listConsultationsByUser(...a),
   listConsultationsByMerchant: (...a) => use().listConsultationsByMerchant(...a),
   getConsultation: (...a) => use().getConsultation(...a),
-  replyConsultation: (...a) => use().replyConsultation(...a),
+  sendMessage: (...a) => use().sendMessage(...a),
+  closeConsultation: (...a) => use().closeConsultation(...a),
   // 订单
   createOrder: (...a) => use().createOrder(...a),
   listOrdersByUser: (...a) => use().listOrdersByUser(...a),

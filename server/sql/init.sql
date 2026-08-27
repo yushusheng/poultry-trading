@@ -43,20 +43,32 @@ CREATE TABLE products (
   KEY idx_category (category)
 ) ENGINE=InnoDB COMMENT='商品表';
 
--- 咨询表
+-- 咨询表（多轮会话）
 CREATE TABLE consultations (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   product_id INT UNSIGNED NOT NULL COMMENT '关联商品',
   user_id INT UNSIGNED NOT NULL COMMENT '咨询用户',
   merchant_id INT UNSIGNED NOT NULL COMMENT '被咨询商户',
-  content VARCHAR(500) NOT NULL COMMENT '咨询内容',
-  reply VARCHAR(500) DEFAULT NULL COMMENT '商户回复',
-  reply_at DATETIME DEFAULT NULL COMMENT '回复时间',
+  status ENUM('open', 'closed') NOT NULL DEFAULT 'open' COMMENT '状态：open进行中 closed已结束',
+  closed_at DATETIME DEFAULT NULL COMMENT '结束时间',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_product (product_id),
   KEY idx_user (user_id),
   KEY idx_merchant (merchant_id)
 ) ENGINE=InnoDB COMMENT='咨询表';
+
+-- 咨询消息表（双方可反复发送）
+CREATE TABLE consultation_messages (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  consultation_id INT UNSIGNED NOT NULL COMMENT '所属咨询',
+  sender_id INT UNSIGNED NOT NULL COMMENT '发送人id',
+  sender_role ENUM('user', 'merchant') NOT NULL COMMENT '发送方角色',
+  content VARCHAR(500) NOT NULL DEFAULT '' COMMENT '消息内容（图片消息为占位文本）',
+  type ENUM('text', 'image') NOT NULL DEFAULT 'text' COMMENT '消息类型：text文字 image图片',
+  image_url VARCHAR(255) DEFAULT NULL COMMENT '图片地址（type=image 时）',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_consultation (consultation_id)
+) ENGINE=InnoDB COMMENT='咨询消息表';
 
 -- 订单表（交易记录）
 CREATE TABLE orders (
@@ -105,3 +117,13 @@ INSERT INTO orders (order_no, product_id, user_id, merchant_id, quantity, total_
 ('DEMO00000011', 4, 2, 1, 3, 105.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'completed', DATE_SUB(NOW(), INTERVAL 130 DAY), DATE_SUB(NOW(), INTERVAL 130 DAY)),
 ('DEMO00000012', 3, 2, 1, 1, 120.00, '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'paid',      DATE_SUB(NOW(), INTERVAL 160 DAY), DATE_SUB(NOW(), INTERVAL 160 DAY)),
 ('DEMO00000013', 1, 2, 1, 1, 68.00,  '李四买家', '13900000002', '浙江省杭州市西湖区XX路1号', 'pending',   DATE_SUB(NOW(), INTERVAL 0 DAY),  NULL);
+
+-- 演示咨询会话（多轮消息）
+INSERT INTO consultations (id, product_id, user_id, merchant_id, status, created_at) VALUES
+(1, 1, 2, 1, 'open', DATE_SUB(NOW(), INTERVAL 2 DAY));
+
+INSERT INTO consultation_messages (consultation_id, sender_id, sender_role, content, created_at) VALUES
+(1, 2, 'user',     '请问土鸡可以帮忙宰杀吗？', DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 9 HOUR),
+(1, 1, 'merchant', '可以的，支持宰杀清理，下单时备注即可。', DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 10 HOUR),
+(1, 2, 'user',     '好的，那能送到小区门口吗？', DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 11 HOUR),
+(1, 1, 'merchant', '可以，同城送货上门。', DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 14 HOUR);

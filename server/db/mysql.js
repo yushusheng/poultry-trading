@@ -129,19 +129,29 @@ async function deleteProduct(id) {
   await q('DELETE FROM products WHERE id = ?', [id]);
 }
 
-// ---------- 咨询 ----------
+// ---------- 咨询（多轮会话） ----------
 async function createConsultation({ productId, userId, merchantId, content }) {
   const r = await q(
-    'INSERT INTO consultations (product_id, user_id, merchant_id, content) VALUES (?, ?, ?, ?)',
-    [productId, userId, merchantId, content]
+    'INSERT INTO consultations (product_id, user_id, merchant_id, status) VALUES (?, ?, ?, ?)',
+    [productId, userId, merchantId, 'open']
   );
-  return getConsultation(r.insertId);
+  const cid = r.insertId;
+  await q(
+    'INSERT INTO consultation_messages (consultation_id, sender_id, sender_role, content, type, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+    [cid, userId, 'user', content, 'text', null]
+  );
+  return getConsultation(cid);
 }
 
 async function listConsultationsByUser(userId) {
   return q(
-    `SELECT c.*, p.title AS product_title, p.image_url AS product_image, p.category AS product_category,
-            u.nickname AS merchant_name
+    `SELECT c.*,
+            p.title AS product_title, p.image_url AS product_image, p.category AS product_category,
+            u.nickname AS merchant_name,
+            (SELECT content FROM consultation_messages cm WHERE cm.consultation_id = c.id ORDER BY cm.id DESC LIMIT 1) AS last_message,
+            (SELECT cm.type FROM consultation_messages cm WHERE cm.consultation_id = c.id ORDER BY cm.id DESC LIMIT 1) AS last_message_type,
+            (SELECT cm.image_url FROM consultation_messages cm WHERE cm.consultation_id = c.id ORDER BY cm.id DESC LIMIT 1) AS last_message_image,
+            (SELECT COUNT(*) FROM consultation_messages cm WHERE cm.consultation_id = c.id) AS message_count
      FROM consultations c
      LEFT JOIN products p ON p.id = c.product_id
      LEFT JOIN users u ON u.id = c.merchant_id
@@ -153,8 +163,13 @@ async function listConsultationsByUser(userId) {
 
 async function listConsultationsByMerchant(merchantId) {
   return q(
-    `SELECT c.*, p.title AS product_title, p.image_url AS product_image, p.category AS product_category,
-            u.nickname AS user_name
+    `SELECT c.*,
+            p.title AS product_title, p.image_url AS product_image, p.category AS product_category,
+            u.nickname AS user_name,
+            (SELECT content FROM consultation_messages cm WHERE cm.consultation_id = c.id ORDER BY cm.id DESC LIMIT 1) AS last_message,
+            (SELECT cm.type FROM consultation_messages cm WHERE cm.consultation_id = c.id ORDER BY cm.id DESC LIMIT 1) AS last_message_type,
+            (SELECT cm.image_url FROM consultation_messages cm WHERE cm.consultation_id = c.id ORDER BY cm.id DESC LIMIT 1) AS last_message_image,
+            (SELECT COUNT(*) FROM consultation_messages cm WHERE cm.consultation_id = c.id) AS message_count
      FROM consultations c
      LEFT JOIN products p ON p.id = c.product_id
      LEFT JOIN users u ON u.id = c.user_id
@@ -175,11 +190,25 @@ async function getConsultation(id) {
      WHERE c.id = ? LIMIT 1`,
     [id]
   );
-  return rows[0] || null;
+  const c = rows[0];
+  if (!c) return null;
+  c.messages = await q(
+    'SELECT id, sender_id, sender_role, content, type, image_url, created_at FROM consultation_messages WHERE consultation_id = ? ORDER BY id ASC',
+    [id]
+  );
+  return c;
 }
 
-async function replyConsultation(id, reply) {
-  await q('UPDATE consultations SET reply = ?, reply_at = NOW() WHERE id = ?', [reply, id]);
+async function sendMessage({ consultationId, senderId, senderRole, content, type, imageUrl }) {
+  await q(
+    'INSERT INTO consultation_messages (consultation_id, sender_id, sender_role, content, type, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+    [consultationId, senderId, senderRole, content || '', type || 'text', imageUrl || null]
+  );
+  return getConsultation(consultationId);
+}
+
+async function closeConsultation(id) {
+  await q('UPDATE consultations SET status = ?, closed_at = NOW() WHERE id = ?', ['closed', id]);
   return getConsultation(id);
 }
 
@@ -350,7 +379,8 @@ module.exports = {
   listConsultationsByUser,
   listConsultationsByMerchant,
   getConsultation,
-  replyConsultation,
+  sendMessage,
+  closeConsultation,
   createOrder,
   listOrdersByUser,
   listOrdersByMerchant,
