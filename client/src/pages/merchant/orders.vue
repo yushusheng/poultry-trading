@@ -1,5 +1,16 @@
 <template>
   <view class="container">
+    <!-- 搜索框：订单号 / 买家名称 模糊搜索 -->
+    <view class="search-bar card">
+      <input
+        class="search-input"
+        v-model="keyword"
+        placeholder="搜索订单号 / 买家名称"
+        confirm-type="search"
+      />
+      <text v-if="keyword" class="clear" @click="keyword = ''">✕</text>
+    </view>
+
     <view class="tabs">
       <view
         v-for="t in tabs"
@@ -12,7 +23,7 @@
       </view>
     </view>
 
-    <view v-for="o in orders" :key="o.id" class="card order-card">
+    <view v-for="o in filteredOrders" :key="o.id" class="card order-card">
       <view class="head">
         <text class="product-title">{{ o.product_title }}</text>
         <text class="status" :class="'s-' + o.status">{{ statusText(o.status) }}</text>
@@ -28,12 +39,12 @@
       </view>
     </view>
 
-    <EmptyState v-if="!loading && orders.length === 0" text="暂无交易记录" />
+    <EmptyState v-if="!loading && filteredOrders.length === 0" text="暂无交易记录" />
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { get, put } from '@/utils/request'
 import { ORDER_STATUS } from '@/config'
@@ -50,6 +61,21 @@ const tabs = [
 const currentTab = ref('')
 const orders = ref([])
 const loading = ref(true)
+const keyword = ref('')
+
+// 时间筛选 + 搜索（订单号/买家名称 模糊匹配）组合过滤
+const filteredOrders = computed(() => {
+  const k = keyword.value.trim().toLowerCase()
+  return orders.value.filter((o) => {
+    if (currentTab.value && o.status !== currentTab.value) return false
+    if (k) {
+      const no = String(o.order_no || '').toLowerCase()
+      const un = String(o.user_name || '').toLowerCase()
+      if (no.indexOf(k) === -1 && un.indexOf(k) === -1) return false
+    }
+    return true
+  })
+})
 
 function statusText(s) {
   return ORDER_STATUS[s] || s
@@ -59,7 +85,7 @@ async function load() {
   loading.value = true
   try {
     const data = await get('/orders/merchant')
-    orders.value = (data || []).filter((o) => !currentTab.value || o.status === currentTab.value)
+    orders.value = data || []
   } catch (e) {
     // 已提示
   } finally {
@@ -70,7 +96,6 @@ async function load() {
 
 function switchTab(v) {
   currentTab.value = v
-  load()
 }
 
 async function complete(o) {
@@ -88,6 +113,27 @@ onPullDownRefresh(load)
 </script>
 
 <style lang="scss" scoped>
+.search-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+
+  .search-input {
+    flex: 1;
+    background: #f5f5f5;
+    border-radius: 36rpx;
+    padding: 16rpx 28rpx;
+    font-size: 26rpx;
+  }
+
+  .clear {
+    margin-left: 20rpx;
+    color: #999;
+    font-size: 28rpx;
+    padding: 8rpx;
+  }
+}
+
 .tabs {
   display: flex;
   background: #fff;
